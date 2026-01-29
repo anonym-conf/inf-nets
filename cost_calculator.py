@@ -348,14 +348,3 @@ class CostCalculator:
         # print(approx_prof_cost)
         for i, entry in enumerate(tqdm(self.results, desc='Calculating approx. profiler cost:')):
             entry['prof_post_hoc_cost'] = approx_prof_cost[i]
-
-
-# calculator = CostCalculator('inference_files/sst2_train_gemma3-1b-it_proxy.pkl', model_id='google/gemma-3-1b-it')
-# calculator.calculate()
-# # print(calculator.results[0])
-# for entry in calculator.results[:20]:
-#     print(entry['cost_tflops'], entry['proxy_post_hoc_cost'])
-
-# list1 = [entry['cost_tflops'] for entry in calculator.results]
-# list2 = [entry['proxy_post_hoc_cost'] for entry in calculator.results]
-# print(list1==list2)
