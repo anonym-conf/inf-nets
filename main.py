@@ -26,13 +26,11 @@ def run_multi_thresholds(args_):
     test_loader = loader.StructuresLoader(
         dataset_name=args_.dataset, s_llm=args_.sLLM, m_llm=args_.mLLM
     )
-    # test_loader.sLLM_results = test_loader.load_results_file(f'inference_files/{args_.dataset}_valid_{args_.sLLM}_profiler.pkl')
-    # test_loader.mLLM_results = test_loader.load_results_file(f'inference_files/{args_.dataset}_valid_{args_.mLLM}_profiler.pkl')
 
     train_loader.load_dataset()  # loads dataset
 
-    train_loader.sLLM_results = train_loader.load_results_file(f'inference_files/{args_.dataset}_train_{args_.sLLM}_profiler.pkl')
-    train_loader.mLLM_results = train_loader.load_results_file(f'inference_files/{args_.dataset}_train_{args_.mLLM}.pkl')[:8000]
+    train_loader.sLLM_results = train_loader.load_results_file(f'.../{args_.dataset}_train_{args_.sLLM}_profiler.pkl')
+    train_loader.mLLM_results = train_loader.load_results_file(f'.../{args_.dataset}_train_{args_.mLLM}_profiler.pkl')
     print(f'\nLoaded initial file. sLLM: {len(train_loader.sLLM_results)} samples.')
     print(f'Loaded initial file. mLLM: {len(train_loader.mLLM_results)} samples.\n')
 
@@ -87,8 +85,7 @@ def run_multi_thresholds(args_):
             train_loader.get_result_values(train_loader.mLLM_results, key='cost_tflops'), parameter_count=args_.mLLM_param_count)
         print(f'Cost signatures (param-aware): sLLM = {sLLM_cost_param_aware}, mLLM = {mLLM_cost_param_aware}.\n')
 
-    # gold_truth = loader.get_result_values(results=loader.sLLM_results, key='ground_truth_label')  # gold truth of data
-    # gold_truth_train = [train_loader.dataset['train']['label'][i] for i in range(len(train_loader.dataset['train']))]
+    
     gold_truth_train = train_loader.get_result_values(train_loader.sLLM_results, key='ground_truth_label')
     assert gold_truth_train == train_loader.get_result_values(train_loader.mLLM_results, key='ground_truth_label')
     # print(gold_truth_train == gold_truth)
@@ -127,26 +124,16 @@ def run_multi_thresholds(args_):
         else:
             sLLM_betas_train = train_loader.obtain_binary_betas()
 
-    # optimizer = optimizers.SingleThresholdOptimizer(y_true=gold_truth_train, 
-    #                                                 y_hat_s=sLLM_pred_train, y_hat_m=mLLM_pred_train,
-    #                                                 betas=sLLM_betas_train, xi=args_.xi, oracle=args_.oracle,
-    #                                                 name='oracle' if args_.oracle else 'non_oracle')
+    
 
     optimizer = optimizers.MultiThresholdOptimizer(y_true=gold_truth_train, 
                                                    y_hat_s=sLLM_pred_train, y_hat_m=mLLM_pred_train,
                                                    betas=sLLM_betas_train, xi=args_.xi, oracle=args_.oracle,
                                                    name='oracle' if args_.oracle else 'non_oracle')
 
-    # opt_result = optimizer.optimize_indicators(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_indicators_oracle_v2(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_indicators_oracle_linear(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_indicators_imperfect(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_imperfect_mc_dp(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
+    
     opt_result = optimizer.optimize(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # print(opt_result)
-    # print(f'Optimization results: tau* = {opt_result[0]}, achieved cost = {opt_result[1]}, '
-    #       f'achieved error = {opt_result[2]}.\n')
-    # tau_star, cost_star, err_star = opt_result
+   
     tau_star, _ = opt_result
 
     eval_train = evaluator.Evaluator(
@@ -167,11 +154,7 @@ def run_multi_thresholds(args_):
         mode='oracle' if args_.oracle else 'non_oracle'
     ))
     print()
-    # pprint.pprint(eval_train.evaluate_policy(
-    #     c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware,
-    #     mode='non_oracle'
-    # ))
-    # print()
+    
 
 
     if args_.calculate_cost:
@@ -229,8 +212,7 @@ def run_multi_thresholds(args_):
 
 
     # for non-oracle evaluation...
-    # gold_truth_test = [train_loader.dataset['validation']['label'][i]
-    #                    for i in range(len(train_loader.dataset['validation']))]
+    
     gold_truth_test = test_loader.get_result_values(test_loader.sLLM_results, key='ground_truth_label')
     
     # eval_ = evaluator.Evaluator()
@@ -282,8 +264,8 @@ def run_single_threshold(args_):
 
     train_loader.load_dataset()  # loads dataset
 
-    train_loader.sLLM_results = train_loader.load_results_file(f'inference_files/{args_.dataset}_train_{args_.sLLM}_profiler.pkl')
-    train_loader.mLLM_results = train_loader.load_results_file(f'inference_files/{args_.dataset}_train_{args_.mLLM}_profiler.pkl')
+    train_loader.sLLM_results = train_loader.load_results_file(f'.../{args_.dataset}_train_{args_.sLLM}_profiler.pkl')
+    train_loader.mLLM_results = train_loader.load_results_file(f'.../{args_.dataset}_train_{args_.mLLM}_profiler.pkl')
     print(f'\nLoaded initial file. sLLM: {len(train_loader.sLLM_results)} samples.')
     print(f'Loaded initial file. mLLM: {len(train_loader.mLLM_results)} samples.\n')
 
@@ -397,8 +379,6 @@ def run_single_threshold(args_):
     calibrator = None
     if args_.calibrate:
         probs = train_loader.obtain_generation_betas(quantile_based=True)
-        # calibrator = calibrators.TopConfidenceCalibrator()
-        # calibrator = calibrators.PerClassConfidenceCalibrator(probs.shape[1])
         calibrator = calibrators.SequenceConfidenceCalibrator()
         print(f'\nCalibrating confidence...')
         calibrator.fit(probs, 
@@ -431,13 +411,6 @@ def run_single_threshold(args_):
         betas=sLLM_betas_train, threshold=tau_star, xi=args_.xi, oracle=args_.oracle
     )
 
-    # if args_.oracle:
-    #     eval_train.coverage_metrics(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    #     # eval_train.threshold_plots(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware,
-    #     #                            error_ind=err_star, cost_ind=cost_star)
-
-    # eval_train.coverage_metrics_non_oracle(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware, 
-    #                                        gold_truth=gold_truth_train)
     print(f'\nStatistics for training set:')
     pprint.pprint(eval_train.evaluate_policy(
         c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware,
@@ -505,15 +478,6 @@ def run_single_threshold(args_):
         betas=sLLM_betas_test, threshold=tau_star, xi=args_.xi, test=True, oracle=args_.oracle
     )
 
-    # if args_.oracle:
-    #     err_star_test, cost_star_test = eval_test.coverage_metrics(c_s=sLLM_cost_param_aware_test,
-    #                                                                c_m=mLLM_cost_param_aware_test)
-        # eval_test.threshold_plots(c_s=sLLM_cost_param_aware_test, c_m=mLLM_cost_param_aware_test,
-        #                            error_ind=err_star_test, cost_ind=cost_star_test)
-
-    # err_star_test_non_oracle, cost_star_test_non_oracle = eval_test.coverage_metrics_non_oracle(
-    #     c_s=sLLM_cost_param_aware_test, c_m=mLLM_cost_param_aware_test, gold_truth=gold_truth_test
-    # )
     print(f'\nStatistics for testing set:')
     test_eval = eval_test.evaluate_policy(
         c_s=sLLM_cost_param_aware_test, c_m=mLLM_cost_param_aware_test,
@@ -523,9 +487,6 @@ def run_single_threshold(args_):
     pprint.pprint(test_eval)
     
     print()
-    # eval_test.threshold_plots_non_oracle(c_s=sLLM_cost_param_aware_test, c_m=mLLM_cost_param_aware_test,
-    #                                      error_ind=err_star_test_non_oracle, cost_ind=cost_star_test_non_oracle,
-    #                                      gold_truth=gold_truth_test)
     eval_test.threshold_plots_non_oracle(c_s=sLLM_cost_param_aware_test, c_m=mLLM_cost_param_aware_test,
                                          error_ind=test_eval['policy_global_error'], cost_ind=test_eval['policy_cost_avg'],
                                          gold_truth=gold_truth_test, rouge=False,
@@ -564,9 +525,3 @@ if __name__ == '__main__':
         print(f"Results saved to {file_path}")
 
     
-
-
-
-
-
-
