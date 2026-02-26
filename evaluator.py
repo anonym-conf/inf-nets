@@ -641,6 +641,8 @@ class Evaluator:
         else:
             # y_hat_cascade = np.where(accepted, self.y_hat_s, self.y_hat_m)
             # error_ind_curve = np.array([np.mean((self.betas >= t) & (y_hat_cascade != np.ones(shape=(len(gold_truth,))))) for t in thetas])
+
+            # for generation tasks
             err_s = (self.y_hat_s != np.ones(shape=(len(gold_truth))))  # (N,)
             err_m = (self.y_hat_m != np.ones(shape=(len(gold_truth))))  # (N,)
 
@@ -714,3 +716,4 @@ class Evaluator:
         self.betas = None
         self.xi = None
         self.threshold = None
+
