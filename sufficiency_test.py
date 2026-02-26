@@ -266,7 +266,6 @@ def augment_bernoulli_probabilities(p, eps=1e-12):
     return X_aug
 
 
-
 if __name__ == '__main__':
     args = parser.parse_args()
     help_map = {
@@ -512,8 +511,3 @@ if __name__ == '__main__':
     print(f"\nLikelihood ratio test statistic: {lr_stat:.3f}")
     print(f"Degrees of freedom: {df_diff}")
     print(f"p-value: {p_value_lr:.3g}")
-    
-    
-
-
-
