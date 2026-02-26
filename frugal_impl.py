@@ -229,7 +229,7 @@ class CorrectnessScorer:
             logging_steps=50,
             report_to="none",
             fp16=torch.cuda.is_available(),
-            load_best_model_at_end=True,  # Essential: loads best model when training ends
+            load_best_model_at_end=True,  # loads best model when training ends
             metric_for_best_model='eval_loss',  # Metric to determine "best" model
             greater_is_better=False,      # Lower loss is better (reverse for accuracy)
             # use_cpu=True
