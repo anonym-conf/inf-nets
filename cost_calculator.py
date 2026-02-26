@@ -21,11 +21,11 @@ class CostCalculator:
     
     def load_model(self, model_id):
         # access_token = "..."
-        # login(token=access_token, )
+        # login(token=access_token, )  # possibly will need HF login
         if 'ministral' in str(model_id).lower():
             return Mistral3ForConditionalGeneration.from_pretrained(model_id, device_map="cpu",
                                                                     quantization_config=FineGrainedFP8Config(dequantize=True))
-        return AutoModelForCausalLM.from_pretrained(model_id, device_map="cpu", cache_dir='/media/SSD_2TB/flamel/two-llm-cascade/')
+        return AutoModelForCausalLM.from_pretrained(model_id, device_map="cpu", )
 
     @staticmethod
     def _tri(L_in, L_out):
