@@ -134,26 +134,16 @@ def run_multi_thresholds(args_):
         else:
             sLLM_betas_train = train_loader.obtain_binary_betas()
 
-    # optimizer = optimizers.SingleThresholdOptimizer(y_true=gold_truth_train, 
-    #                                                 y_hat_s=sLLM_pred_train, y_hat_m=mLLM_pred_train,
-    #                                                 betas=sLLM_betas_train, xi=args_.xi, oracle=args_.oracle,
-    #                                                 name='oracle' if args_.oracle else 'non_oracle')
+    
 
     optimizer = optimizers.MultiThresholdOptimizer(y_true=gold_truth_train, 
                                                    y_hat_s=sLLM_pred_train, y_hat_m=mLLM_pred_train,
                                                    betas=sLLM_betas_train, xi=args_.xi, oracle=args_.oracle,
                                                    name='oracle' if args_.oracle else 'non_oracle')
 
-    # opt_result = optimizer.optimize_indicators(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_indicators_oracle_v2(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_indicators_oracle_linear(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_indicators_imperfect(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # opt_result = optimizer.optimize_imperfect_mc_dp(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
+    
     opt_result = optimizer.optimize(c_s=sLLM_cost_param_aware, c_m=mLLM_cost_param_aware)
-    # print(opt_result)
-    # print(f'Optimization results: tau* = {opt_result[0]}, achieved cost = {opt_result[1]}, '
-    #       f'achieved error = {opt_result[2]}.\n')
-    # tau_star, cost_star, err_star = opt_result
+    
     tau_star, _ = opt_result
 
     eval_train = evaluator.Evaluator(
@@ -543,9 +533,7 @@ def run_single_threshold(args_):
 
 def run_frugal(args_):
 
-    # (A) Load data
-    # train_ds, val_ds, test_ds = load_agnews_subsets(n_train=1000, n_val=400, n_test=400)
-    # print("train/val/test:", len(train_ds), len(val_ds), len(test_ds))
+    
     train_loader = loader.StructuresLoader(
         dataset_name=args_.dataset, s_llm=args_.sLLM, m_llm=args_.mLLM
     )
@@ -631,11 +619,9 @@ def run_frugal(args_):
     cost_big = TokenCostModel(fixed_cost=mLLM_cost_param_aware)
 
     # (D) Build scorer dataset for the small model
-    # NOTE: this step generates LLM outputs
     print('Generating dataset for scorer...')
     sc_train = generate_scorer_dataset(train_loader.dataset['train'].select(range(len(train_loader.sLLM_results))), 
                                        gen_small, max_items=len(train_loader.sLLM_results))
-    # sc_val   = generate_scorer_dataset(val_ds,   gen_small, max_items=200)
 
     # (E) Train scorer for stage-1 (P(correct | query, small_answer))
     scorer_small = CorrectnessScorer("distilbert-base-uncased") 
@@ -647,23 +633,7 @@ def run_frugal(args_):
     scorer_big = CorrectnessScorer("distilbert-base-uncased")  # unused but kept for uniform interface
 
     # Define budget in "token units"
-    # Baseline cost = always run small
-    # Extra cost = sometimes run big
-    # Let's allow on average: small + 0.30*big
-    # -> roughly 30% deferral budget (in token terms)
-    # We'll estimate big average cost quickly from val by sampling
-    # tmp_big = gen_big.predict_batch(val_texts[:50])
-    # avg_big_cost_est = np.mean([cost_big.cost(r.in_tokens, r.out_tokens) for r in tmp_big])
-    # tmp_small = gen_small.predict_batch(val_texts[:50])
-    # avg_small_cost_est = np.mean([cost_small.cost(r.in_tokens, r.out_tokens) for r in tmp_small])
-
-    # cost_budget = sLLM_cost_param_aware + 0.30 * mLLM_cost_param_aware
-    # cost_budget = 25.400384607492878  # sst2 
-    # cost_budget = 1035.01110933163  # agnews 
-    # cost_budget = 78.07700894661735  # emotion
-    # cost_budget = 2311.506715925342  # fakenews
-    # cost_budget = 272.24189075121825  # squad
-    # cost_budget = 4.236710452108197  # wmt
+   
     cost_budget = args_.frugal_cost  # input 
     print(f"Estimated avg_small_cost={sLLM_cost_param_aware:.1f}, avg_big_cost={mLLM_cost_param_aware:.1f}")
     print(f"Cost budget (avg): {cost_budget:.5f}")
@@ -717,22 +687,7 @@ def run_frugal(args_):
         print(f'Cost signatures (param-aware) - test: sLLM = {sLLM_cost_param_aware_test},'
               f' mLLM = {mLLM_cost_param_aware_test}.\n')
 
-    # policy = CascadePolicy(thresholds=[best["theta"]])
-    # cascade = FrugalCascade(
-    #     generators=[HFGenerator(results=test_loader.sLLM_results), 
-    #                 HFGenerator(results=test_loader.mLLM_results)],
-    #     scorers=[scorer_small, scorer_big],  # scorer_big unused
-    #     cost_models=[TokenCostModel(fixed_cost=sLLM_cost_param_aware_test), 
-    #                  TokenCostModel(fixed_cost=mLLM_cost_param_aware_test)],
-    #     policy=policy,
-    # )
 
-    # metrics = cascade.run(
-    #     ds=train_loader.dataset['train'].select(range(len(train_loader.sLLM_results), init_samples_num))
-    # )
-    # print("\n=== CASCADE TEST METRICS ===")
-    # print(metrics)
-    # print(f"Chosen theta={best['theta']:.3f} | val_defer_rate≈{best['defer_rate']:.3f} | val_avg_cost≈{best['avg_cost']:.1f}")
     
     # test the policy...
     gen_small.results = test_loader.sLLM_results
@@ -860,7 +815,6 @@ def run_hybridllm(args_):
     cost_big = TokenCostModel(fixed_cost=mLLM_cost_param_aware)
 
     # (D) Build scorer dataset for the small model
-    # NOTE: this step generates LLM outputs
     print('Generating dataset for router...')
     label_tokens = None
     if args_.dataset == 'sst2':
@@ -1004,11 +958,3 @@ if __name__ == '__main__':
             json.dump(result, json_file, indent=4)
 
         print(f"Results saved to {file_path}")
-
-    
-
-
-
-
-
-
