@@ -30,7 +30,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("device:", device)
 
 # ============================================
-# 1) Generator Wrapper (LLM classifier via generation)
+# 1) Generator Wrapper
 # ============================================
 
 @dataclass
@@ -177,7 +177,6 @@ class TokenCostModel:
 
 # ============================================
 # 3) Scorer g(q,a): predict correctness prob from (q,a)
-#    We'll train one scorer per generator stage (as in FrugalGPT)
 # ============================================
 
 def build_scorer_text(query_text: str, answer_text: str) -> str:
@@ -363,21 +362,6 @@ class FrugalCascade:
             "cost_saved": ((c_s + c_m) - float(avg_cost)) / (c_s + c_m) * 100
         }
 
-
-# ============================================
-# 5) Demo: data + training scorers + threshold sweep
-# ============================================
-
-# def load_agnews_subsets(n_train=800, n_val=400, n_test=400) -> Tuple[Dataset, Dataset, Dataset]:
-#     ds = load_dataset("ag_news")
-#     train = ds["train"].shuffle(seed=SEED).select(range(n_train))
-#     test = ds["test"].shuffle(seed=SEED).select(range(n_test))
-
-#     # carve val from train
-#     val = train.select(range(n_val))
-#     train2 = train.select(range(n_val, n_train))
-
-#     return train2, val, test
 
 def generate_scorer_dataset(
     base_ds: Dataset,
