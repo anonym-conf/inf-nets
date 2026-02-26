@@ -21,16 +21,16 @@ class StructuresLoader:
             self.dataset = load_dataset('fancyzhx/ag_news')
         elif self.dataset_name == 'fakenews':
             self.dataset = load_dataset('Pulk17/Fake-News-Detection-dataset')
-        else:
+        elif self.dataset_name == 'squad':
             self.dataset = load_dataset('rajpurkar/squad')
+        else:
+            self.dataset = load_dataset('wmt/wmt_t2t')
 
     @staticmethod
-    def load_results_file(path):
-        return pickle.load(open(path, 'rb'))
+    def load_results_file(path): return pickle.load(open(path, 'rb'))
 
     @staticmethod
-    def get_result_values(results, key):
-        return [entry[key] for entry in results]
+    def get_result_values(results, key): return [entry[key] for entry in results]
 
     def obtain_binary_betas(self, return_both=False):
         assert self.sLLM_results is not None

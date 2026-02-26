@@ -1,13 +1,21 @@
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
+from abc import ABC, abstractmethod
 
-class TopConfidenceCalibrator:
+class Calibrator(ABC):
+    def __init__(self): pass
+
+    @abstractmethod
+    def fit(self, *args, **kwargs): pass
+
+class TopConfidenceCalibrator(Calibrator):
     """
     Calibrate confidence = max probability using isotonic regression
     on correctness indicator.
     """
 
     def __init__(self):
+        super().__init__()
         self.iso = None
 
     def fit(self, p_raw, y_true):
@@ -32,7 +40,7 @@ class TopConfidenceCalibrator:
         return pred, conf_cal
 
 
-class PerClassConfidenceCalibrator:
+class PerClassConfidenceCalibrator(Calibrator):
     """
     Per-predicted-class confidence calibration using isotonic regression on correctness.
 
@@ -57,6 +65,7 @@ class PerClassConfidenceCalibrator:
             min_samples_per_class: minimum points to fit a per-class isotonic model
             use_global_fallback: if True, fit a global isotonic model and use it when a class model is unavailable
         """
+        super().__init__()
         assert score_type in ("pmax", "margin"), "score_type must be 'pmax' or 'margin'"
         self.K = int(K)
         self.score_type = score_type
@@ -179,7 +188,7 @@ class PerClassConfidenceCalibrator:
         return self
 
 
-class SequenceConfidenceCalibrator:
+class SequenceConfidenceCalibrator(Calibrator):
     """
     Calibrate a single scalar confidence score S to an estimated probability of success:
         beta_tilde = g(S) ≈ P(Z=1 | S)
@@ -187,6 +196,7 @@ class SequenceConfidenceCalibrator:
     """
 
     def __init__(self, increasing=True):
+        super().__init__()
         self.increasing = bool(increasing)
         self.iso = None
 

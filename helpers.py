@@ -229,16 +229,27 @@ def cost_distribution_signature_param_aware(cost_list, parameter_count, weights=
 
     # Base weights that emphasize metrics correlated with higher parameter costs
     if weights is None:
+        # weights = {
+        #     'mean': 1.4,  # Higher weight - directly reflects average cost
+        #     'median': 1.3,  # High weight - robust central tendency
+        #     'std': 0.7,  # Moderate - variability matters but less than central tendency
+        #     'iqr': 0.8,  # Moderate - robust variability
+        #     'skew': 0.4,  # Low - distribution shape secondary
+        #     'kurtosis': 0.3,  # Low - tail behavior secondary
+        #     'p95': 1.5,  # Highest - worst-case costs often scale with parameters
+        #     'cv': 0.6,  # Moderate - normalized variability
+        #     'param_boost': 100  # Direct parameter count influence
+        # }
         weights = {
-            'mean': 1.4,  # Higher weight - directly reflects average cost
-            'median': 1.3,  # High weight - robust central tendency
-            'std': 0.7,  # Moderate - variability matters but less than central tendency
-            'iqr': 0.8,  # Moderate - robust variability
-            'skew': 0.4,  # Low - distribution shape secondary
-            'kurtosis': 0.3,  # Low - tail behavior secondary
-            'p95': 1.5,  # Highest - worst-case costs often scale with parameters
-            'cv': 0.6,  # Moderate - normalized variability
-            'param_boost': 0.2  # Direct parameter count influence
+            'mean': 2.0,
+            'median': 1.2,
+            'std': 0.8,
+            'iqr': 1.1,
+            'skew': 0.6,
+            'kurtosis': 0.5,
+            'p95': 1.3,
+            'cv': 0.9,
+            'param_boost': 100
         }
 
     arr = np.array(cost_list)

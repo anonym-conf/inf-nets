@@ -163,6 +163,7 @@ class Evaluator:
         # theta: Union[float, np.ndarray],
         *,
         mode: str = "non_oracle",  # "oracle" or "non_oracle"
+        discr_: bool = True,
         # yhat_m: Optional[np.ndarray] = None,  # required if non_oracle
         # constant costs:
         c_s: Optional[float] = None,
@@ -200,7 +201,7 @@ class Evaluator:
         # if proba_s.ndim > 1: N, K = proba_s.shape
         # else: N, K = proba_s.shape[0], 1
         N = len(self.y_hat_s)
-        K = len(np.unique(self.y_true)) if not np.isscalar(self.threshold) else 0
+        K = len(np.unique(self.y_true)) if discr_ else 0
     
         if mode not in {"oracle", "non_oracle"}:
             raise ValueError("mode must be 'oracle' or 'non_oracle'")
@@ -244,7 +245,8 @@ class Evaluator:
         random_cost = c_s + c_m * deferral_rand
 
         # keep texts...
-        if np.isscalar(self.threshold):
+        if not discr_:
+        # if np.isscalar(self.threshold):
             gold_truth_txt =  copy.deepcopy(gold_truth)
             gold_truth = np.ones(shape=(len(self.y_true,))) if gold_truth is not None else None
 
@@ -291,11 +293,11 @@ class Evaluator:
         deferral = deferred_count / N
     
         # Conditional errors (sometimes useful but not what the constraint uses)
-        cond_err_accepted = (err_accepted_count / accepted_count) if accepted_count > 0 else 0.0
-        if mode == "non_oracle":
-            cond_err_deferred = (err_deferred_count / deferred_count) if deferred_count > 0 else 0.0
-        else:
-            cond_err_deferred = 0.0
+        # cond_err_accepted = (err_accepted_count / accepted_count) if accepted_count > 0 else 0.0
+        # if mode == "non_oracle":
+        #     cond_err_deferred = (err_deferred_count / deferred_count) if deferred_count > 0 else 0.0
+        # else:
+        #     cond_err_deferred = 0.0
     
         # Costs
         # Always pay small-model cost; pay big-model cost only when deferred.
@@ -369,8 +371,9 @@ class Evaluator:
         rouge_none_deferred, sim_none_deferred = None, None
         rouge_random_deferred, sim_random_deferred = None, None
         rouge, sim = None, None
-        rouge_scores = None
-        if not np.isscalar(self.threshold):
+        # rouge_scores = None
+        if discr_:
+        # if not np.isscalar(self.threshold):
             if gold_truth is not None:
 
                 self.y_true = np.array(old_y_true)  # revert back to oracle y_true for possible next calculations
@@ -478,6 +481,14 @@ class Evaluator:
             "all_deferred_f1": f1_all_deferred,
             "all_deferred_rouge": rouge_all_deferred,
             "all_deferred_sim": sim_all_deferred,
+            "all_deferred_cost_saved": ((c_m) - float(c_s + c_m)) / (c_m) * 100,  # big-only baseline
+            # "all_efficiency_ratio_f1": (f1_all_deferred or 0.) / float(c_s + c_m),
+            # "all_efficiency_ratio_accuracy": ((1. - float(all_deferred_error) or 0.)) / float(c_s + c_m),
+            # "all_efficiency_ratio_cosine": (sim_all_deferred or 0.) / float(c_s + c_m),
+            # "all_utility_f1": (f1_all_deferred or 0.) - (float(c_s + c_m) / float(c_s + c_m)),
+            # "all_utility_accuracy": ((1. - float(all_deferred_error)) or 0.) - (float(c_s + c_m) / float(c_s + c_m)),
+            # "all_utility_cosine": (sim_all_deferred or 0.) - (float(c_s + c_m) / float(c_s + c_m)),
+            
 
             "none_defereed_error": float(none_deferred_error),
             "none_deferred_accuracy": 1.-float(none_deferred_error),
@@ -487,6 +498,13 @@ class Evaluator:
             "none_deferred_f1": f1_none_deferred,
             "none_deferred_rouge": rouge_none_deferred,
             "none_deferred_sim": sim_none_deferred,
+            "none_deferred_cost_saved": ((c_m) - float(c_s)) / (c_m) * 100,  # big-only baseline
+            # "none_efficiency_ratio_f1": (f1_none_deferred or 0.) / float(c_s),
+            # "none_efficiency_ratio_accuracy": ((1. - float(none_deferred_error) or 0.)) / float(c_s),
+            # "none_efficiency_ratio_cosine": (sim_none_deferred or 0.) / float(c_s),
+            # "none_utility_f1": (f1_none_deferred or 0.) - (float(c_s) / float(c_s + c_m)),
+            # "none_utility_accuracy": ((1. - float(none_deferred_error)) or 0.) - (float(c_s) / float(c_s + c_m)),
+            # "none_utility_cosine": (sim_none_deferred or 0.) - (float(c_s) / float(c_s + c_m)),
 
             "random_defereed_error": float(random_error),
             "random_deferred_accuracy": 1.-float(random_error),
@@ -496,9 +514,19 @@ class Evaluator:
             "random_deferred_f1": f1_random_deferred,
             "random_deferral": float(deferral_rand),
             "random_coverage": float(coverage_rand),
-            "random_cost_saved": ((c_s + c_m) - float(random_cost)) / (c_s + c_m) * 100,
+            "random_cost": float(random_cost),
+            # "random_cost_saved": ((c_s + c_m) - float(random_cost)) / (c_s + c_m) * 100,
+            "random_cost_saved": ((c_m) - float(random_cost)) / (c_m) * 100,
+            # "random_cost_saved": ((c_s + c_m) - float(random_cost)) / (c_m) * 100,
+
             "random_deferred_rouge": rouge_random_deferred,
             "random_deferred_sim": sim_random_deferred,
+            # "random_efficiency_ratio_f1": (f1_random_deferred or 0.) / float(random_cost),
+            # "random_efficiency_ratio_accuracy": ((1. - float(random_error) or 0.)) / float(random_cost),
+            # "random_efficiency_ratio_cosine": (sim_random_deferred or 0.) / float(random_cost),
+            # "random_utility_f1": (f1_random_deferred or 0.) - (float(random_cost) / float(c_s + c_m)),
+            # "random_utility_accuracy": ((1. - float(random_error)) or 0.) - (float(random_cost) / float(c_s + c_m)),
+            # "random_utility_cosine": (sim_random_deferred or 0.) - (float(random_cost) / float(c_s + c_m)),
 
             "final_error_received": float(all_deferred_error-global_error),
             "final_accuracy_penalty": 1. - float(all_deferred_error) - (1. - float(global_error)),
@@ -519,7 +547,15 @@ class Evaluator:
             "policy_sim": sim,
             "cost_small_total": float(cost_s_total),
             "cost_master_total": float(cost_m_total),
-            "policy_cost_saved": ((c_s + c_m) - float(cost_avg)) / (c_s + c_m) * 100,
+            # "policy_cost_saved": ((c_s + c_m) - float(cost_avg)) / (c_s + c_m) * 100,  # worst-case policy
+            "policy_cost_saved": ((c_m) - float(cost_avg)) / (c_m) * 100,  # big-only baseline
+            # "policy_cost_saved": ((c_s + c_m) - float(cost_avg)) / (c_m) * 100,  # avoidable cost
+            # "policy_efficiency_ratio_f1": (f1_all_deferred or 0.) / float(cost_avg),
+            # "policy_utility_f1": (f1_all_deferred or 0.) - (float(cost_avg) / float(c_s + c_m)),
+            # "policy_efficiency_ratio_accuracy": ((1. - float(global_error) or 0.)) / float(cost_avg),
+            # "policy_utility_accuracy": ((1. - float(global_error)) or 0.) - (float(cost_avg) / float(c_s + c_m)),
+            # "policy_efficiency_ratio_cosine": (sim or 0.) / float(cost_avg),
+            # "policy_utility_cosine": (sim or 0.) - (float(cost_avg) / float(c_s + c_m))
             # "per_class": per_class,
         }
 
@@ -630,7 +666,7 @@ class Evaluator:
         plt.plot(thetas, error_ind_curve, label=f'{"Error" if not rouge else "ROUGE"} (Monte Carlo sampling)', linewidth=3.5)
         if np.isscalar(self.threshold):
             plt.axvline(self.threshold, linestyle=':',
-                        label=f'θ* indicator = {self.threshold:.3f} ({"error" if not rouge else "ROUGE"} = {error_ind:.3f})', linewidth=3.5)
+                        label=f'θ* = {self.threshold:.3f} ({"error" if not rouge else "ROUGE"} = {error_ind:.3f})', linewidth=3.5)
         if rouge: pass
         else: plt.axhline(1 - self.xi, linestyle='--', label=f'constraint on training = {1 - self.xi:.3f}', linewidth=3.5)
         plt.scatter(self.threshold, error_ind, color='red', marker='x', s=150)

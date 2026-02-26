@@ -20,12 +20,12 @@ class CostCalculator:
         del model  # free up memory
     
     def load_model(self, model_id):
-        access_token = "..."
-        login(token=access_token, )
+        # access_token = "..."
+        # login(token=access_token, )
         if 'ministral' in str(model_id).lower():
             return Mistral3ForConditionalGeneration.from_pretrained(model_id, device_map="cpu",
                                                                     quantization_config=FineGrainedFP8Config(dequantize=True))
-        return AutoModelForCausalLM.from_pretrained(model_id, device_map="cpu",)
+        return AutoModelForCausalLM.from_pretrained(model_id, device_map="cpu", cache_dir='/media/SSD_2TB/flamel/two-llm-cascade/')
 
     @staticmethod
     def _tri(L_in, L_out):
@@ -333,8 +333,13 @@ class CostCalculator:
                 self.lengths.append(entry['text_length'])  # for safety
             else:
                 l_in = self.lengths[i]
+                entry['text_length'] = l_in
             l_in_list.append(l_in)
-            l_out = entry['output_length'] if 'output_length' in entry else 1
+            if 'output_length' in entry:
+                l_out = entry['output_length']  
+            else:
+                l_out = 1
+                entry['output_length'] = l_out
             l_out_list.append(l_out)
             cost = self.proxy_query_cost(l_in, l_out)
             # cost = self.approximate_profiler_cost(l_in, l_out)
@@ -348,3 +353,14 @@ class CostCalculator:
         # print(approx_prof_cost)
         for i, entry in enumerate(tqdm(self.results, desc='Calculating approx. profiler cost:')):
             entry['prof_post_hoc_cost'] = approx_prof_cost[i]
+
+
+# calculator = CostCalculator('inference_files/sst2_train_gemma3-1b-it_proxy.pkl', model_id='google/gemma-3-1b-it')
+# calculator.calculate()
+# # print(calculator.results[0])
+# for entry in calculator.results[:20]:
+#     print(entry['cost_tflops'], entry['proxy_post_hoc_cost'])
+
+# list1 = [entry['cost_tflops'] for entry in calculator.results]
+# list2 = [entry['proxy_post_hoc_cost'] for entry in calculator.results]
+# print(list1==list2)

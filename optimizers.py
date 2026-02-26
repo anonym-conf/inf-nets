@@ -504,6 +504,7 @@ class MultiThresholdOptimizer(PolicyOptimizer):
             return self.optimize_oracle_mc_dp(c_s, c_m)
         else:
             return self.optimize_imperfect_mc_dp(c_s, c_m)
+            # return self.optimize_imperfect_mc_lagrangian(c_s, c_m)
     
     def _apply_multithreshold_from_betas(
         self,
@@ -626,6 +627,7 @@ class MultiThresholdOptimizer(PolicyOptimizer):
 
         class_opts, K = self._build_options_non_oracle()
         B = int(np.floor(error_budget * n + 1e-12))
+        # B = n
 
         states: Dict[int, int] = {0: 0}
         back: List[Dict[int, Tuple[int, int]]] = []
@@ -638,7 +640,7 @@ class MultiThresholdOptimizer(PolicyOptimizer):
             for prev_e, prev_d in states.items():
                 for j in range(len(tau)):
                     e = prev_e + int(ecnt[j])
-                    if e > B:
+                    if e > B: 
                         continue
                     d = prev_d + int(dcnt[j])
                     if (e not in new_states) or (d < new_states[e]):
@@ -658,8 +660,32 @@ class MultiThresholdOptimizer(PolicyOptimizer):
             cost = float(c_s + c_m * defr)
             return theta, {"err": err, "cost": cost, "deferral": defr, "coverage": 1-defr}
 
-        best_e = min(states.keys(), key=lambda e: (states[e], e))
+        # best_e = min(states.keys(), key=lambda e: (states[e], e))
+        # lambda_ = 20 * c_m
+        # es = []
+        # for lambda_ in np.concatenate([[0.0], np.logspace(-4, 4, 300)]):
+        #     best_e = min(states.keys(), key=lambda e: c_m * (states[e] / n) + lambda_ * (e / n))
+        #     es.append(best_e)
+
+        # best_e = min(states.keys(), key=lambda e: c_m * (states[e] / n) + lambda_ * (e / n))
+        # best_e = min(es)
+
+        # best_def = states[best_e]
+
+        # --- Two-stage selection ---
+        min_def = min(states.values())
+
+        epsilon_rate = 0.0
+        epsilon = int(np.floor(epsilon_rate * n))
+
+        candidates = [
+            e for e, d in states.items()
+            if d <= min_def + epsilon
+        ]
+
+        best_e = min(candidates)
         best_def = states[best_e]
+
 
         chosen = [0] * K
         cur_e = best_e
@@ -681,6 +707,72 @@ class MultiThresholdOptimizer(PolicyOptimizer):
 
         return theta, {"err": err, "cost": cost, "deferral": defr, "coverage": 1-defr,
                        "error_count": float(best_e), "deferred_count": float(best_def),}
+    
+    def optimize_imperfect_mc_lagrangian(
+        self,
+        # y_true: np.ndarray,
+        # yhat_s: np.ndarray,
+        # betas: np.ndarray,
+        # yhat_m: np.ndarray,
+        # error_budget: float,
+        c_s: float,
+        c_m: float,
+        # K: Optional[int] = None,
+        lambdas: Optional[np.ndarray] = None, 
+        ) -> Tuple[np.ndarray, Dict[str, float]]:
+        """
+        Lagrangian sweep for non-oracle MC objective.
+        """
+        y_true = np.asarray(self.gold_labels)
+        yhat_s = np.asarray(self.s_predictions)
+        yhat_m = np.asarray(self.m_predictions)
+        betas = np.asarray(self.betas, dtype=float)
+        n = len(betas)
+
+        error_budget = 1. - self.xi
+
+        # print('Lagrangian!!!!!')
+
+        class_opts, K = self._build_options_non_oracle()
+        B = int(np.floor(error_budget * n + 1e-12))
+
+        if lambdas is None:
+            lambdas = np.concatenate([[0.0], np.logspace(-4, 4, 81)])
+
+        best_theta = None
+        best_def = 10**18
+        best_err = None
+
+        for lam in lambdas:
+            theta = np.zeros(K, float)
+            total_def = 0
+            total_err = 0
+            for opt in class_opts:
+                score = opt["def_cnt"] + lam * opt["err_cnt"]
+                j = int(np.argmin(score))
+                theta[opt["k"]] = float(opt["tau"][j])
+                total_def += int(opt["def_cnt"][j])
+                total_err += int(opt["err_cnt"][j])
+
+            if total_err <= B and total_def < best_def:
+                best_def = total_def
+                best_theta = theta
+                best_err = total_err
+
+        if best_theta is None:
+            theta = np.full(K, np.nextafter(1.0, np.inf), float)
+        else:
+            theta = best_theta
+
+        accepted = self._apply_multithreshold_from_betas(theta)
+        defr = float((~accepted).mean())
+        err = float((((accepted) & (yhat_s != y_true)).sum() + ((~accepted) & (yhat_m != y_true)).sum()) / n)
+        cost = float(c_s + c_m * defr)
+
+        return theta, {"err": err, "cost": cost, "deferral": defr, "coverage": 1-defr,
+                       "error_count_budget": float(B),
+                       "chosen_error_count": float(best_err) if best_theta is not None else float((((accepted) & (yhat_s != y_true)).sum() + ((~accepted) & (yhat_m != y_true)).sum())),
+                       "chosen_deferred_count": float(best_def) if best_theta is not None else float((~accepted).sum())}
     
     def _build_options_oracle(
         self,
